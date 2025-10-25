@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract VotingSystem {
+    struct Proposal {
+        string description;
+        uint256 voteCount;
+        uint256 endTime;
+        bool executed;
+    }
+
+    mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => mapping(address => bool)) public hasVoted;
+    uint256 public proposalCount;
+
+    event ProposalCreated(uint256 proposalId, string description, uint256 endTime);
+    event Voted(uint256 proposalId, address voter);
+
+    modifier onlyBeforeEnd(uint256 _proposalId) {
+        require(block.timestamp < proposals[_proposalId].endTime, "Oylama bitti");
+        _;
+    }
+
+    function createProposal(string memory _description, uint256 _duration) public {
+        proposalCount++;
+        proposals[proposalCount] = Proposal(_description, 0, block.timestamp + _duration, false);
+        emit ProposalCreated(proposalCount, _description, block.timestamp + _duration);
+    }
+
+    function vote(uint256 _proposalId) public onlyBeforeEnd(_proposalId) {
+        require(!hasVoted[_proposalId][msg.sender], "Zaten oy verdiniz");
+        proposals[_proposalId].voteCount++;
+        hasVoted[_proposalId][msg.sender] = true;
+        emit Voted(_proposalId, msg.sender);
+    }
+
+    function getProposalResult(uint256 _proposalId) public view returns (uint256) {
+        return proposals[_proposalId].voteCount;
+    }
+}
